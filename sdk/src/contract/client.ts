@@ -257,6 +257,28 @@ export class ContractClient {
     return Number(StellarSdk.scValToNative(result));
   }
 
+  async getCommitmentAt(
+    sourceAddress: string,
+    index: number
+  ): Promise<Uint8Array | null> {
+    const result = await this.invokeViewFunction(sourceAddress, "commitment_at", [
+      StellarSdk.nativeToScVal(BigInt(index), { type: "u64" }),
+    ]);
+    return StellarSdk.scValToNative(result) as Uint8Array | null;
+  }
+
+  async getCommitments(
+    sourceAddress: string,
+    start = 0,
+    limit = 200
+  ): Promise<Uint8Array[]> {
+    const result = await this.invokeViewFunction(sourceAddress, "commitments", [
+      StellarSdk.nativeToScVal(BigInt(start), { type: "u64" }),
+      StellarSdk.nativeToScVal(limit, { type: "u32" }),
+    ]);
+    return StellarSdk.scValToNative(result) as Uint8Array[];
+  }
+
   async getMetadata(sourceAddress: string): Promise<ConfidentialTokenMetadata> {
     const result = await this.invokeViewFunction(sourceAddress, "metadata", []);
     const native = StellarSdk.scValToNative(result);

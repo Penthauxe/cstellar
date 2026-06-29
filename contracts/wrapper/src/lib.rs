@@ -53,6 +53,7 @@ pub enum DataKey {
     FilledSubtree(u32),
     Nullifier(BytesN<32>),
     Commitment(BytesN<32>),
+    CommitmentByIndex(u64),
 }
 
 // ---------------------------------------------------------------------------
@@ -194,6 +195,12 @@ pub trait ConfidentialTokenWrapper {
 
     /// Return total number of commitments stored.
     fn note_count(env: Env) -> u64;
+
+    /// Return a stored commitment by insertion index.
+    fn commitment_at(env: Env, index: u64) -> Option<BytesN<32>>;
+
+    /// Return a page of stored commitments.
+    fn commitments(env: Env, start: u64, limit: u32) -> Vec<BytesN<32>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -500,6 +507,30 @@ impl ConfidentialWrapper {
             .unwrap_or(0)
     }
 
+    pub fn commitment_at(env: Env, index: u64) -> Option<BytesN<32>> {
+        env.storage()
+            .persistent()
+            .get(&DataKey::CommitmentByIndex(index))
+    }
+
+    pub fn commitments(env: Env, start: u64, limit: u32) -> Vec<BytesN<32>> {
+        let count = Self::note_count(env.clone());
+        let mut out = Vec::new(&env);
+        if start >= count {
+            return out;
+        }
+
+        let end = core::cmp::min(count, start.saturating_add(limit as u64));
+        let mut index = start;
+        while index < end {
+            if let Some(commitment) = Self::commitment_at(env.clone(), index) {
+                out.push_back(commitment);
+            }
+            index += 1;
+        }
+        out
+    }
+
     pub fn asset(env: Env) -> Address {
         env.storage().instance().get(&DataKey::Asset).unwrap()
     }
@@ -558,6 +589,11 @@ fn insert_commitment(env: &Env, commitment: &BytesN<32>) -> Result<(), ContractE
     env.storage()
         .persistent()
         .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND);
+    let indexed_key = DataKey::CommitmentByIndex(count);
+    env.storage().persistent().set(&indexed_key, commitment);
+    env.storage()
+        .persistent()
+        .extend_ttl(&indexed_key, TTL_THRESHOLD, TTL_EXTEND);
 
     let mut index = count;
     let mut current = commitment.clone();
@@ -789,6 +825,30 @@ mod tests {
 
         assert!(!client.commitment_exists(&cm));
         assert!(!client.is_spent(&nf));
+    }
+
+    #[test]
+    fn test_commitment_index_queries() {
+        let (env, contract_id, _, _) = setup();
+        env.cost_estimate().budget().reset_unlimited();
+        let client = ConfidentialWrapperClient::new(&env, &contract_id);
+        let cm0 = BytesN::from_array(&env, &[1u8; 32]);
+        let cm1 = BytesN::from_array(&env, &[2u8; 32]);
+
+        env.as_contract(&contract_id, || {
+            insert_commitment(&env, &cm0).unwrap();
+            insert_commitment(&env, &cm1).unwrap();
+        });
+
+        assert_eq!(client.note_count(), 2);
+        assert_eq!(client.commitment_at(&0), Some(cm0.clone()));
+        assert_eq!(client.commitment_at(&1), Some(cm1.clone()));
+        assert_eq!(client.commitment_at(&2), None);
+
+        let page = client.commitments(&0, &10);
+        assert_eq!(page.len(), 2);
+        assert_eq!(page.get(0).unwrap(), cm0);
+        assert_eq!(page.get(1).unwrap(), cm1);
     }
 
     #[test]
