@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
-import { VaultGate } from "@/components/VaultGate";
 
 export const metadata: Metadata = {
   title: "SCT-01 | Confidential Token Standard",
@@ -19,7 +18,7 @@ export default function RootLayout({
       <body className="min-h-screen">
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <VaultGate>{children}</VaultGate>
+          {children}
         </main>
         <footer className="border-t border-stellar-blue/20 mt-16 py-6 text-center text-sm text-stellar-blue">
           <p>
