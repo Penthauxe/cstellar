@@ -140,21 +140,26 @@ export function buildMerklePath(
     throw new Error("note leaf index missing from local tree");
   }
   const zeros = zeroes(depth);
-  let level = commitmentLeaves.map((leaf) => fieldFromBytes(hexToBytes(leaf)));
+  let level = Array.from({ length: commitmentLeaves.length }, (_, i) => {
+    const leaf = commitmentLeaves[i];
+    return leaf ? fieldFromBytes(hexToBytes(leaf)) : zeros[0];
+  });
   const pathElements: string[] = [];
   const pathIndices: string[] = [];
   let index = leafIndex;
 
   for (let d = 0; d < depth; d++) {
     const siblingIndex = index ^ 1;
-    const sibling = siblingIndex < level.length ? level[siblingIndex] : zeros[d];
+    const sibling = siblingIndex < level.length && level[siblingIndex] !== undefined
+      ? level[siblingIndex]
+      : zeros[d];
     pathElements.push(sibling.toString());
     pathIndices.push((index & 1).toString());
 
     const next: bigint[] = [];
     for (let i = 0; i < level.length; i += 2) {
-      const left = level[i];
-      const right = i + 1 < level.length ? level[i + 1] : zeros[d];
+      const left = level[i] ?? zeros[d];
+      const right = i + 1 < level.length && level[i + 1] !== undefined ? level[i + 1] : zeros[d];
       next.push(poseidonHash([left, right]));
     }
     level = next.length > 0 ? next : [zeros[d + 1]];
