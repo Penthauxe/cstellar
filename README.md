@@ -1,10 +1,22 @@
 # SCT-01: Stellar Confidential Transfer Standard
 
-SCT-01 is a developer standard and kit for adding private transfers to Stellar apps.
+SCT-01 is a developer standard and toolkit for adding private transfers to Stellar apps.
 
 Deposit any supported Stellar asset into a Confidential Transfer Adapter, transfer value privately as notes, and withdraw back to the original asset when needed.
 
 > **WARNING: This is a hackathon prototype. NOT AUDITED. Do NOT use with real funds.**
+
+## Developer Tooling
+
+cstellar is built as reusable privacy tooling for Stellar developers, not just a single demo app. It packages the core pieces needed to experiment with confidential transfers end to end:
+
+- Soroban contracts for a Confidential Transfer Adapter and Groth16 verifier.
+- Circom circuits and generated proving/verifying artifacts.
+- A TypeScript SDK for commitments, nullifiers, note management, proof generation, contract calls, and note encryption/storage helpers.
+- A browser demo dApp that exercises deposit, private transfer, withdraw, receive, and explorer flows on Stellar testnet.
+- Reference scripts for contract deployment, verifier initialization, artifact generation, and local demo setup.
+
+The goal is to give Stellar builders a practical starting point for adding ZK privacy to wallets, payment apps, payroll tools, remittance flows, and other asset-transfer products.
 
 ## Architecture
 
@@ -21,8 +33,8 @@ Browser Groth16 proof     Verifier Contract       Transfer Adapter       dApp
 | Verifier Contract | `contracts/verifier/` | BN254 Groth16 verifier using CAP-0074 host functions |
 | Final Circuit | `circuits/circom/sct01.circom` | Circom Groth16 circuit for transfer + withdraw |
 | Legacy Circuits | `circuits/transfer/`, `circuits/unwrap/` | Exploratory Noir circuits, not used by the demo verifier |
-| TypeScript SDK | `sdk/` | Note management, crypto, proof generation, contract client, encrypted note storage |
-| Demo dApp | `dapp/` | Next.js app with deposit, transfer, receive, withdraw, explorer, encrypted vault |
+| TypeScript SDK | `sdk/` | Note management, crypto, proof generation, contract client, encrypted note storage helpers |
+| Demo dApp | `dapp/` | Next.js app with deposit, transfer, receive, withdraw, and explorer flows |
 
 ## How It Works
 
@@ -51,8 +63,8 @@ Instead of encrypted account balances, SCT-01 uses **notes** - discrete units of
 ## Note Storage
 
 Notes carry spend secrets (`nullifierKey`, `nullifierSecret`, `randomness`).
-Losing them means losing funds; leaking them means theft. The SDK and dApp
-treat note persistence as a first-class security concern.
+Losing them means losing funds; leaking them means theft. The SDK treats note
+persistence as a first-class security concern.
 
 ### SDK storage layer (`sdk/src/storage/`)
 
@@ -89,19 +101,12 @@ await mgr.init(); // hydrates from encrypted store
 mgr.createNote(assetId, 1000n); // persisted through encrypted store
 ```
 
-### dApp vault (`dapp/src/lib/vault.ts`, `dapp/src/hooks/useVault.ts`)
+### Demo dApp note storage
 
-- Replaces the old Zustand `persist` over `localStorage`.
-- On connect, the dApp probes IndexedDB for an existing encrypted vault for the
-  connected wallet. If found, a passcode screen unlocks it; otherwise the user
-  sets a passcode (≥4 chars) and a new vault is created.
-- The full notes state (`notes` + `commitmentLeaves`) is encrypted and written
-  through on every store mutation.
-- A "Backup" button in the navbar downloads an encrypted `.sct` file the user
-  can drop into Google Drive / iCloud. A "Lock" button re-locks the vault
-  without disconnecting the wallet.
-- A `VaultGate` component hides page content until the vault is unlocked, so
-  stale secrets from a previous session never render before re-hydration.
+The hackathon dApp keeps note state in browser localStorage so the demo works
+without a separate passcode or vault-unlock step. This is intentionally simple
+for testing and should not be used with real funds. Production apps should wire
+the SDK storage layer above into their own key-management and recovery model.
 
 ### Mobile / native wallets
 
@@ -301,10 +306,10 @@ cstellar/
 ├── dapp/                 # Next.js demo dApp
 │   └── src/
 │       ├── app/          # Pages (deposit, transfer, receive, withdraw, explorer)
-│       ├── components/   # UI components (incl. VaultGate, VaultLockScreen)
-│       ├── hooks/        # React hooks (wallet, notes, vault)
-│       ├── store/        # Zustand state (notes no longer persisted to localStorage)
-│       └── lib/          # Stellar SDK, crypto, contract helpers, encrypted vault
+│       ├── components/   # UI components
+│       ├── hooks/        # React hooks (wallet, notes)
+│       ├── store/        # Zustand state with demo localStorage persistence
+│       └── lib/          # Stellar SDK, crypto, and contract helpers
 ├── Cargo.toml            # Workspace root
 ├── prd.txt               # Product requirements
 └── stack.txt             # Tech stack
@@ -321,12 +326,9 @@ cstellar/
 - `snarkjs` is vendored as a browser bundle to avoid shipping vulnerable npm
   transitive packages in the app dependency graph.
 - BN254 and Poseidon/Poseidon2 require Protocol 25+ network/runtime support.
-- Notes are stored in an encrypted-at-rest vault (XChaCha20-Poly1305 keyed
-  from a user passcode via scrypt). The default dApp backend is IndexedDB;
-  the old localStorage-persisted note store is gone. Plaintext spend secrets
-  never touch disk. There is no passcode recovery - losing the passcode means
-  losing access to the encrypted notes (restore from a `.sct` backup if you
-  made one).
+- The SDK includes encrypted-at-rest note storage helpers (XChaCha20-Poly1305,
+  IndexedDB/memory backends, and backup import/export). The demo dApp currently
+  uses localStorage for speed and should be treated as testnet-only.
 - Encrypted-note payloads delivered on-chain via `wrap` / `conf_transfer`
   remain demo JSON for now. The SDK's `encryptNote`/`decryptNote` helpers are
   the production-ready recipient encryption path; wiring them into the dApp
@@ -374,8 +376,7 @@ nullifier = Poseidon(nullifier_key, nullifier_secret)
 - [x] Final Circom transfer and withdraw circuit with value conservation and Merkle membership
 - [x] Trusted setup and generated testnet proving/verifying artifacts
 - [x] Encrypted note storage SDK (XChaCha20-Poly1305 at rest, IndexedDB default)
-- [x] dApp passcode vault replacing localStorage note persistence
-- [x] Encrypted `.sct` backup export/import
+- [x] Encrypted `.sct` backup export/import in the SDK
 - [ ] Note encryption with recipient scanning (event-based)
 - [ ] View key / selective disclosure
 - [ ] Multi-asset support
