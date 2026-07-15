@@ -4,14 +4,13 @@
 
 It is not a new asset, chain, or wallet ecosystem. A Stellar app uses a reference **Confidential Transfer Adapter** to lock a public Stellar Asset Contract (SAC) token, represent that value as private notes, and later release the original token again.
 
-```mermaid
-flowchart LR
-  Public["Public Stellar asset"] -->|deposit| Adapter["Confidential Transfer Adapter"]
-  Adapter -->|commitment| Notes["Private notes"]
-  Notes -->|Groth16 proof| Transfer["Private transfer"]
-  Transfer -->|new commitments| Notes
-  Notes -->|Groth16 proof| Adapter
-  Adapter -->|withdraw| Public
+```text
+Public Stellar asset
+  └─ deposit ─> Confidential Transfer Adapter ─> private note commitment
+                                                  └─ Groth16 proof ─> private transfer
+                                                                     └─ new commitments ─> private notes
+
+Private note ─> Groth16 proof ─> Adapter ─> withdraw ─> original public asset
 ```
 
 ## Product goal

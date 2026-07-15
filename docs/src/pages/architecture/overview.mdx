@@ -2,17 +2,15 @@
 
 SCT-01 separates private statement generation, on-chain validation, and app-facing integration. The separation keeps reusable protocol logic out of the dApp and keeps proof verification out of the asset adapter.
 
-```mermaid
-flowchart LR
-  User["User + Freighter"] --> Dapp["Next.js dApp"]
-  Dapp --> SDK["@sct01/sdk"]
-  Dapp --> Prover["snarkjs + sct01.wasm + zkey"]
-  SDK --> Adapter["Soroban Confidential Transfer Adapter"]
-  Adapter --> Asset["Underlying SAC token"]
-  Adapter --> Tree["Poseidon commitment tree"]
-  Adapter --> Verifier["Soroban Groth16 verifier"]
-  Verifier --> BN254["CAP-0074 BN254 host functions"]
-  Prover --> Circuit["Circom sct01 circuit"]
+```text
+User + Freighter
+  └─> Next.js dApp ─> @sct01/sdk ─> Soroban Confidential Transfer Adapter
+         ├─> snarkjs + sct01.wasm + zkey ─> Circom sct01 circuit
+         └─> browser proof orchestration
+
+Adapter ─> underlying SAC token
+        ├─> Poseidon commitment tree
+        └─> Soroban Groth16 verifier ─> CAP-0074 BN254 host functions
 ```
 
 ## Component responsibilities

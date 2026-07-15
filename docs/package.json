@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vocs dev",
     "build": "vocs build",
-    "vercel-build": "npx playwright install --with-deps chromium && npm run build",
     "preview": "vocs preview"
   },
   "dependencies": {

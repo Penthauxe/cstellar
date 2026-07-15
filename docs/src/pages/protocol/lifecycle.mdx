@@ -2,30 +2,24 @@
 
 The current flow has three public operations: deposit (`wrap`), private transfer (`confidential_transfer`), and withdrawal (`unwrap`).
 
-```mermaid
-sequenceDiagram
-  participant U as User wallet
-  participant D as dApp + SDK
-  participant A as Adapter
-  participant V as Verifier
+```text
+User wallet ─> dApp + SDK: choose deposit amount
+dApp + SDK ─> Adapter: wrap(amount, commitment, note payload)
+Adapter: lock SAC asset and append commitment
 
-  U->>D: Choose deposit amount
-  D->>A: wrap(amount, commitment, note payload)
-  A->>A: Lock SAC asset and append commitment
+User wallet ─> dApp + SDK: send private amount
+dApp + SDK: build Merkle path and Groth16 proof
+dApp + SDK ─> Adapter: confidential_transfer(proof, public inputs, nullifier, 2 commitments)
+Adapter ─> Verifier: verify proof statement
+Verifier ─> Adapter: valid
+Adapter: mark nullifier and append outputs
 
-  U->>D: Send private amount
-  D->>D: Build path and Groth16 proof
-  D->>A: confidential_transfer(proof, public inputs, nullifier, 2 commitments)
-  A->>V: verify proof statement
-  V-->>A: valid
-  A->>A: Mark nullifier and append outputs
-
-  U->>D: Withdraw exact-value note
-  D->>D: Build withdrawal proof
-  D->>A: unwrap(proof, nullifier, recipient, amount)
-  A->>V: verify proof statement
-  V-->>A: valid
-  A->>A: Mark nullifier and release SAC asset
+User wallet ─> dApp + SDK: withdraw exact-value note
+dApp + SDK: build withdrawal proof
+dApp + SDK ─> Adapter: unwrap(proof, nullifier, recipient, amount)
+Adapter ─> Verifier: verify proof statement
+Verifier ─> Adapter: valid
+Adapter: mark nullifier and release SAC asset
 ```
 
 ## 1. Deposit / `wrap`
