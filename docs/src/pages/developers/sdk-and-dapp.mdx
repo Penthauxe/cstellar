@@ -1,0 +1,38 @@
+# SDK and dApp boundary
+
+`@sct01/sdk` is the reusable integration surface. A wallet or dApp should build on it instead of duplicating field encoding or Soroban call shapes.
+
+## SDK exports
+
+| Area | Examples |
+| --- | --- |
+| Crypto | `computeCommitment`, `deriveNullifier`, `addressToField`, `transferBindingHash`, `unwrapBindingHash`. |
+| Proofs | `ProofGenerator`, `proofPackToGroth16Proof`, `bindingSignal`. |
+| Notes | `NoteManager`, serialization helpers, note types. |
+| Storage | `BlobStorage`, `EncryptedNoteStorage`, `EncryptedJsonStorage`, IndexedDB and memory backends. |
+| Contracts | `ContractClient` for deposit, transfer, withdrawal, views, and events. |
+
+## Contract client flow
+
+`ContractClient` owns Soroban XDR/ScVal details:
+
+1. Build method call with sorted map keys and byte ScVals.
+2. Simulate transaction through RPC.
+3. Assemble simulated transaction.
+4. Hand XDR to injected browser signer or Node keypair.
+5. Submit and poll to completion.
+
+Browser users pass a Freighter-compatible signer callback. Scripts can use the keypair convenience methods.
+
+## dApp responsibilities
+
+The Next.js dApp keeps browser-specific logic outside the SDK:
+
+- Freighter detection, access, network read, and signing.
+- Circuit artifact loading and `snarkjs` execution.
+- Local Merkle-path construction from commitment leaves.
+- Page state for deposit, transfer, receive, withdrawal, dashboard, and explorer.
+
+## Integration rule
+
+Reusable protocol changes belong in `sdk/` first. Keep dApp wrappers thin and page interfaces stable. When binding formats or call arguments change, test SDK encoding against the actual Soroban interface before updating presentation code.

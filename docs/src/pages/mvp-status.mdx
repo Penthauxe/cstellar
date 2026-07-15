@@ -1,0 +1,45 @@
+# MVP status
+
+This repository implements a real testnet-oriented path: browser-generated Groth16 proofs, a Soroban adapter, and a separate Soroban BN254 verifier. It is still a narrow hackathon MVP, not a production private-payment system.
+
+## Implemented now
+
+- One SAC underlying asset per adapter.
+- `wrap`: lock public asset and insert one note commitment.
+- `confidential_transfer`: consume one input nullifier and insert exactly two output commitments.
+- `unwrap`: consume one exact-value note and transfer public asset to recipient.
+- Poseidon incremental Merkle tree with depth 20.
+- Circom Groth16 circuit and browser-side `snarkjs` proof generation.
+- Dedicated verifier using Soroban CAP-0074 BN254 host functions.
+- TypeScript SDK for shared crypto, proof packing, notes, storage primitives, and adapter calls.
+- Next.js dApp wired to Freighter and Stellar testnet services.
+
+## Deliberate MVP limits
+
+| Area | Current limit |
+| --- | --- |
+| Inputs | One input note only. |
+| Outputs | Exactly two: recipient plus sender change. |
+| Withdrawals | One exact-value note; no partial withdrawal. |
+| Assets | One asset per adapter instance. |
+| Tree | Depth 20, maximum 1,048,576 commitments. |
+| Proof setup | Deterministic demo artifacts, not production ceremony artifacts. |
+| Compliance | No view keys, recovery keys, or institutional disclosure flow. |
+| Sync | No built-in cross-device note sync. |
+
+## Current dApp safety gap
+
+The SDK contains encrypted storage primitives, but the current dApp does **not** use them. Main branch removed the vault gate and `dapp/src/store/notes.ts` currently persists note secrets with Zustand's `localStorage` middleware. The transfer page also serializes note payloads as JSON into the field named `encrypted_notes`; it does not call the SDK's `encryptNote` function.
+
+This means the live demo must be treated as unsafe for any valuable secret material. Production work must restore encrypted-at-rest note storage, implement recipient encryption/decryption and note discovery, add secure backup/recovery, and re-audit browser threat boundaries before public use.
+
+## Production exit criteria
+
+1. Replace deterministic setup with an appropriate ceremony or audited proving setup.
+2. Complete independent contract, circuit, SDK, and browser-wallet audits.
+3. Encrypt notes for recipients; never persist plaintext spend secrets.
+4. Define reliable indexing, note discovery, reorg/ledger handling, and recovery UX.
+5. Expand circuit and contract support only with tests and a reviewed versioning/migration story.
+6. Add compliance/view-key capabilities only with a narrowly defined disclosure model.
+
+Next: [trust boundaries](/architecture/trust-boundaries).

@@ -1,0 +1,43 @@
+# Adapter contract
+
+Source: `contracts/wrapper/src/lib.rs`.
+
+The Confidential Transfer Adapter is a reference Soroban contract. It coordinates public asset custody with private-state commitments; it is not a generic token replacement.
+
+## Public interface
+
+| Method | Purpose |
+| --- | --- |
+| `initialize` | One-time admin, underlying asset, verifier, and metadata setup. |
+| `wrap` | Move public asset into vault and insert one commitment. |
+| `confidential_transfer` | Verify transfer statement, spend nullifier, insert two output commitments. |
+| `unwrap` | Verify withdrawal statement, spend nullifier, transfer public asset out. |
+| `is_spent` | Read nullifier state. |
+| `commitment_exists` | Read commitment existence. |
+| `root`, `note_count` | Read current Merkle state. |
+| `commitment_at`, `commitments` | Retrieve indexed commitment leaves for client/indexer synchronization. |
+| `asset`, `metadata` | Read configured underlying asset and adapter metadata. |
+
+## Validation order
+
+For a transfer, adapter validates inputs before mutating protocol state:
+
+1. One nullifier and two output commitments are supplied.
+2. Encrypted-note vector length matches outputs and public inputs.
+3. Asset and Merkle root equal current adapter state.
+4. Each output commitment and note hash equals its declared public input.
+5. Binding hash is recomputed from current root, asset, nullifier, output commitments, and note hashes.
+6. Verifier accepts proof with transfer action tag.
+7. Nullifier is unspent; then it is persisted and outputs are appended.
+
+Withdrawal follows same pattern, binding current root, asset, recipient, nullifier, and amount before public asset release.
+
+## Events
+
+| Event | Public payload |
+| --- | --- |
+| `wrap` | Underlying asset, depositor, commitment, note-payload hash. |
+| `conf_transfer` | Underlying asset, nullifier(s), output commitments, note-payload hashes. |
+| `unwrap` | Underlying asset, recipient, nullifier, amount. |
+
+Events support discovery and explorer surfaces while preserving opaque commitment data. They are not a substitute for recipient encryption or private note storage.

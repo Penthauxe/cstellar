@@ -1,0 +1,42 @@
+# Proofs and verifier
+
+The active proving path is Circom + `snarkjs` in browser, paired with a Soroban verifier contract using BN254 host functions.
+
+## Circuit statement
+
+`circuits/circom/sct01.circom` is a universal circuit for transfer and withdrawal. Its public signals are:
+
+```text
+[action, binding]
+```
+
+`action` is `2` for transfer and `3` for withdrawal. `binding` is a Poseidon hash of the public operation data. Everything else needed to prove note ownership, Merkle membership, value conservation, and commitment construction is private witness data.
+
+## Binding hashes
+
+Binding prevents proof reuse across a different public operation.
+
+| Operation | Bound data |
+| --- | --- |
+| Transfer | action, current root, asset, input nullifier, both output commitments, both note-payload hashes. |
+| Withdrawal | action, current root, asset, recipient, nullifier, amount. |
+
+The SDK and adapter implement matching helpers: `transferBindingHash` and `unwrapBindingHash`. Any encoding change must change circuit, SDK, adapter, tests, artifacts, and verifier key together.
+
+## Verifier contract
+
+Source: `contracts/verifier/src/lib.rs`.
+
+The verifier stores one Groth16 verification key and a circuit version. `verify_proof` checks allowed action range, public-signal count, action-signal equality, reconstructs the Groth16 linear combination, and calls `env.crypto().bn254().pairing_check`.
+
+The verifier confirms mathematical validity. The adapter owns business semantics: asset vault, freshness of root, nullifier state, operation-specific binding, and commitment insertion.
+
+## Artifact lifecycle
+
+1. Change `sct01.circom`.
+2. Run `scripts/build-circom-artifacts.sh`.
+3. Publish matching WASM/zkey/verifying key copies to browser path.
+4. Initialize or rotate verifier key with matching circuit version.
+5. Run circuit, contract, SDK, and browser-flow tests against a deployed testnet adapter.
+
+Never mix browser proving artifacts with a verifier key from a different circuit version.

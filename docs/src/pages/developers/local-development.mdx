@@ -1,0 +1,64 @@
+# Run locally
+
+The docs site lives beside contracts, SDK, and dApp. It is independently runnable with Vocs.
+
+## Documentation site
+
+```bash
+cd docs
+npm install
+npm run dev
+```
+
+Build static documentation:
+
+```bash
+cd docs
+npm run build
+```
+
+## Protocol prerequisites
+
+- Node.js 22+ for current Stellar SDK dependency.
+- Rust with `wasm32v1-none` target.
+- Stellar CLI 26+.
+- Circom 2.1+ when rebuilding active proof artifacts.
+- Freighter set to Stellar testnet for demo dApp.
+
+## Build contracts and SDK
+
+```bash
+cargo build --release --target wasm32v1-none
+
+cd sdk
+npm install
+npm run build
+npm test
+```
+
+## Run dApp
+
+```bash
+cd dapp
+npm install
+cp .env.local.example .env.local
+npm run dev
+```
+
+Set the deployed testnet adapter, verifier, and underlying SAC addresses in `dapp/.env.local`. The dApp's browser proof path expects:
+
+```text
+dapp/public/circuits/sct01.wasm
+dapp/public/circuits/sct01_final.zkey
+dapp/public/circuits/verification_key.json
+dapp/public/vendor/snarkjs.min.js
+```
+
+## Test before calling a change complete
+
+- Rebuild artifacts after circuit changes.
+- Run wrapper and verifier tests after contract changes.
+- Run SDK tests and build after SDK changes.
+- Build dApp after changing shared client interfaces.
+- Execute at least one deposit, one transfer, and one exact-note withdrawal on testnet after protocol-path changes.
+- Run `npm run build` in `docs` after documentation changes.

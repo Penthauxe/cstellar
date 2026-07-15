@@ -1,0 +1,49 @@
+# Goal and privacy model
+
+Public chains expose balances, amounts, counterparties, and timing by default. That is a poor fit for payroll, business payments, private investment flows, and financial apps that need normal confidentiality.
+
+SCT-01's practical Stellar path is **note-based zero knowledge**, not fully homomorphic encrypted balances. A note has a hidden amount and spend secrets. A proof proves a note is valid and value is conserved; the contract never learns the private amounts involved in an internal transfer.
+
+## What a private transfer proves
+
+For one input note and two outputs, the active circuit proves:
+
+1. Input commitment was derived from supplied private note data.
+2. Input commitment belongs to current Poseidon Merkle root.
+3. Nullifier was derived from input-note secrets.
+4. `input amount = recipient amount + change amount`.
+5. Recipient and change commitments were derived correctly.
+6. Public binding hash matches exact operation data.
+
+## Privacy boundary
+
+| Hidden during internal transfer | Public or linkable in current design |
+| --- | --- |
+| Recipient-output amount | Adapter address |
+| Sender change amount | Transaction submitter |
+| Confidential balance | Underlying asset for adapter |
+| Note secret material | Current Merkle root |
+| Commitment-to-owner mapping | Nullifier, output commitments, encrypted-note hashes |
+| Internal value flow | Deposit and withdrawal amounts |
+
+Deposit and withdrawal are public entry and exit points. SCT-01 does **not** claim to hide those amounts in this MVP. Network metadata and transaction timing can also leak useful information, so privacy is not anonymity by itself.
+
+## Why an adapter instead of a new token
+
+The underlying SAC token remains the canonical public asset. The adapter locks it on deposit and releases it on withdrawal. Private notes are a claim on value held by that adapter.
+
+This preserves composability with Stellar assets while moving only confidential-state rules into a specialized contract and proof system.
+
+## Target standard surface
+
+The intended standard should specify:
+
+- Adapter interface and metadata.
+- Commitment, nullifier, and encrypted-note formats.
+- Public-input and binding-hash formats.
+- Event conventions suitable for indexers.
+- SDK behavior for notes, proofs, and transaction submission.
+- Wallet UX requirements for secret backup and recovery.
+- Optional view-key and compliance disclosure extensions.
+
+Next: [system architecture](/architecture/overview).

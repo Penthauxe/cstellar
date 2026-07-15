@@ -1,0 +1,30 @@
+# Trust boundaries
+
+SCT-01 reduces what the public chain learns about internal transfers; it does not remove every trust or security requirement.
+
+## Boundaries
+
+| Boundary | Trusted behavior / risk |
+| --- | --- |
+| User device | Must protect note secrets, nullifier material, wallet access, and proof inputs. Device or XSS compromise can steal spend authority. |
+| Browser dApp | Loads circuit artifacts, builds proofs, and asks Freighter to sign. It must not expose note plaintext or substitute artifacts. |
+| Freighter | Authorizes and signs Stellar transactions. It does not prove confidential amounts itself. |
+| Adapter | Enforces asset vault movement, root freshness, public-input consistency, commitments, and nullifier uniqueness. |
+| Verifier | Accepts only proofs valid for stored verification key and exact public signals. |
+| Circuit setup | Correct circuit and trustworthy proving/verifying artifacts are prerequisites for privacy and soundness. |
+| RPC/indexing | Supplies account, transaction, event, and ledger data. It is not entrusted with note secrets but can observe requests and public protocol data. |
+
+## Security invariants
+
+- Adapter releases public value only after verified `unwrap` proof and a fresh nullifier.
+- A nullifier can be recorded once only.
+- A commitment can be inserted once only.
+- Transfer output commitments and hashes must equal their public-input values.
+- Proof action and binding must match operation type and exact public data.
+- Circuit version and verification key must move together.
+
+## What verification cannot compensate for
+
+Valid on-chain proofs cannot recover a lost secret, secure a compromised browser, conceal public deposit/withdrawal amounts, or fix an unsafe proving setup. Production safety requires defense in depth across contracts, circuits, SDK storage, wallet UX, artifact distribution, and operational deployment.
+
+See [MVP status](/mvp-status) for current testnet-only restrictions.

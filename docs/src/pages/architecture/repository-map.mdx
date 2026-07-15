@@ -1,0 +1,39 @@
+# Repository map
+
+The repository is organized by protocol responsibility, not by one application.
+
+```text
+cstellar/
+├── contracts/
+│   ├── wrapper/          Confidential Transfer Adapter (Soroban/Rust)
+│   └── verifier/         Groth16 verifier (Soroban/Rust)
+├── circuits/
+│   ├── circom/           Active universal transfer/withdraw circuit
+│   ├── transfer/         Legacy exploratory Noir circuit
+│   └── unwrap/           Legacy exploratory Noir circuit
+├── artifacts/circom/     Generated circuit artifacts
+├── sdk/                  Reusable TypeScript package
+├── dapp/                 Next.js testnet demonstration UI
+├── scripts/              Circuit build and proof-packing helpers
+├── prd.txt               Product and standard intent
+└── CODEBASE_GUIDE.md     Code-oriented architecture notes
+```
+
+## Primary files
+
+| Path | Responsibility |
+| --- | --- |
+| `contracts/wrapper/src/lib.rs` | Adapter interface, vault movement, tree insertion, public-input validation, nullifier state. |
+| `contracts/verifier/src/lib.rs` | Stored verification key and BN254 Groth16 pairing check. |
+| `circuits/circom/sct01.circom` | Active Circom transfer/withdraw validity statement. |
+| `sdk/src/crypto/` | Poseidon, commitments, nullifiers, address fields, binding hashes. |
+| `sdk/src/contract/client.ts` | Soroban ScVal encoding, simulation, signing handoff, submission, polling. |
+| `sdk/src/storage/` | Pluggable encrypted-at-rest note storage primitives. |
+| `dapp/src/lib/proofs.ts` | Browser `snarkjs` loading, Merkle paths, proof generation. |
+| `dapp/src/app/` | Deposit, transfer, receive, withdrawal, explorer, and dashboard screens. |
+
+## Generated assets
+
+`scripts/build-circom-artifacts.sh` writes the proving artifacts under `artifacts/circom/` and browser-consumed copies under `dapp/public/circuits/`. Change the circuit, then regenerate these together and initialize the verifier with matching verification-key data.
+
+The Noir directories are historical exploration. They are not the live demo proving path.
