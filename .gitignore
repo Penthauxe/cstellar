@@ -5,6 +5,7 @@ node_modules/
 target/
 .next/
 .vocs/
+.vercel/
 dist/
 /docs/**/dist/
 out/
